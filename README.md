@@ -1,62 +1,28 @@
-# Nite Site
+# 🌙 Nite Site
 
-A super simple React website for a software company with dynamic moon phase display.
+The responsive React website for Nite Site.
 
-## Features
 
-- Minimalist design with dark theme
-- Responsive layout for mobile and desktop
-- Dynamic moon phase icon based on actual lunar phases
-- Uses Mona Sans and BN Anora fonts
-- Static site generation for easy deployment
+## 🚀 Live
+Live on [nite.site](https://nite.site)
 
-## Setup
 
-1. Install dependencies:
-```bash
-npm install
-```
+## 📄 License
 
-2. Add the BN Anora font file:
-   - Place `BN-Anora.woff2` in the `/assets` directory
-   - The font is already referenced in the HTML
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-3. Run development server:
-```bash
-npm run dev
-```
+## 🌟 Credits
 
-4. Build for production:
-```bash
-npm run build
-```
+**Astronomical Data**: Moon Phase calculations based on Littleton, Colorado (homebase)
+**Fonts**: Mona Sans and BN Anora
+Designed and built by [Matt Bowers](https://mattb.co) [@mattb-co](https://github.com/mattb-co)
 
-## Deployment
+## 📞 Contact
 
-The built files will be in the `dist` directory. You can deploy this to any static hosting service like:
-- Netlify
-- Vercel
-- GitHub Pages
-- AWS S3 + CloudFront
+**Nite Site Software Company**
+- Website: [nite.site](https://nite.site)
+- GitHub: [@nite-site](https://github.com/nite-site)
 
-## Moon Phase Data
+---
 
-The website uses the `phases.json` file to determine the current moon phase based on the user's visit date. The data includes moon phases for Littleton, Colorado, USA from 2025-2026.
-
-## Project Structure
-
-```
-nitesite/
-├── src/
-│   ├── App.jsx          # Main React component
-│   ├── App.css          # Component styles
-│   ├── main.jsx         # React entry point
-│   ├── index.css        # Global styles
-│   └── moonPhase.js     # Moon phase calculation logic
-├── assets/
-│   └── BN-Anora.woff2   # Custom font file
-├── phases.json          # Moon phase data
-├── index.html           # HTML template
-├── package.json         # Dependencies
-└── vite.config.js       # Vite configuration
-```
+*Built with ❤️ & ☕️  by Nite Site 🌙*
