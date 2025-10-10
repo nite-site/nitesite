@@ -1,0 +1,27 @@
+{
+  "name": "Nite Site",
+  "short_name": "Nite Site",
+  "description": "Delightful digital products. Built during the night shift.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#212121",
+  "theme_color": "#9D988E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/nitesite-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/nitesite-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}

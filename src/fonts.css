@@ -1,0 +1,10 @@
+@font-face {
+  font-family: 'BN Anora';
+  src: url('../assets/BN-Arora.woff2') format('woff2'),
+       url('../assets/BN-Arora.woff') format('woff'),
+       url('../assets/BN-Arora.ttf') format('truetype'),
+       url('../assets/BN-Arora.eot') format('embedded-opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
