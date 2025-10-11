@@ -1,23 +1,35 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import phaseProgressData from '../phase-progress.json';
 import './DatePicker.css';
 
 const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosing = false }, ref) => {
-  const [selectedDate, setSelectedDate] = useState(initialDate);
+  // Ensure initial date is within our data range (Oct 10, 2025 - Oct 10, 2026)
+  const dataStartDate = new Date('2025-10-10');
+  const dataEndDate = new Date('2026-10-10');
+  
+  const getValidInitialDate = (date) => {
+    if (date < dataStartDate) return dataStartDate;
+    if (date > dataEndDate) return dataEndDate;
+    return date;
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getValidInitialDate(initialDate));
   const [dates, setDates] = useState([]);
   const [enableSmoothScroll, setEnableSmoothScroll] = useState(false);
   const containerRef = useRef(null);
 
-  // Generate dates for the picker (6 months before and after current date)
+  // Generate dates for the picker (within our phase-progress.json data range)
   useEffect(() => {
     const generateDates = () => {
       const dateList = [];
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 6);
+      // Our data covers October 10, 2025 to October 10, 2026
+      const startDate = new Date('2025-10-10');
+      const endDate = new Date('2026-10-10');
       
-      for (let i = 0; i < 365; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        dateList.push(date);
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        dateList.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
       }
       
       setDates(dateList);
@@ -90,8 +102,11 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
 
   const scrollToToday = () => {
     const today = new Date();
+    // If today is outside our data range, use the closest valid date
+    const validToday = getValidInitialDate(today);
+    
     const todayIndex = dates.findIndex(date => 
-      date.toDateString() === today.toDateString()
+      date.toDateString() === validToday.toDateString()
     );
     if (todayIndex !== -1 && containerRef.current) {
       const container = containerRef.current;
@@ -104,17 +119,32 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
           inline: 'center'
         });
         
-        // Also select today's date (without triggering another scroll)
-        setSelectedDate(today);
-        onDateChange(today);
+        // Also select the valid date (without triggering another scroll)
+        setSelectedDate(validToday);
+        onDateChange(validToday);
       }
     }
   };
 
+  // Function to get moon phase name from phase-progress.json data
+  const getPhaseName = (date) => {
+    // Use local date format to match our JSON data (avoiding timezone issues)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`; // YYYY-MM-DD format
+    
+    const dayData = phaseProgressData.dailyProgress.find(day => day.date === dateString);
+    return dayData ? dayData.phase : 'Unknown';
+  };
+
+  // Get the moon phase for the currently selected date
+  const currentPhase = getPhaseName(selectedDate);
+
   return (
     <div className={`date-picker ${isClosing ? 'closing' : ''}`} ref={ref}>
       <div className="date-picker-header">
-        <h3>Select Date</h3>
+        <h3>{currentPhase}</h3>
         <button onClick={scrollToToday} className="today-button">
           Today
         </button>
