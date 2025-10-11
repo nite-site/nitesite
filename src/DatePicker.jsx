@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import phaseProgressData from '../phase-progress.json';
+import { getPhaseName } from './moonPhase.jsx';
 import './DatePicker.css';
 
 const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosing = false }, ref) => {
@@ -8,9 +9,7 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
   const dataEndDate = new Date('2026-10-10');
   
   const getValidInitialDate = (date) => {
-    if (date < dataStartDate) return dataStartDate;
-    if (date > dataEndDate) return dataEndDate;
-    return date;
+    return date < dataStartDate ? dataStartDate : date > dataEndDate ? dataEndDate : date;
   };
   
   const [selectedDate, setSelectedDate] = useState(getValidInitialDate(initialDate));
@@ -124,18 +123,6 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
         onDateChange(validToday);
       }
     }
-  };
-
-  // Function to get moon phase name from phase-progress.json data
-  const getPhaseName = (date) => {
-    // Use local date format to match our JSON data (avoiding timezone issues)
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateString = `${year}-${month}-${day}`; // YYYY-MM-DD format
-    
-    const dayData = phaseProgressData.dailyProgress.find(day => day.date === dateString);
-    return dayData ? dayData.phase : 'Unknown';
   };
 
   // Get the moon phase for the currently selected date

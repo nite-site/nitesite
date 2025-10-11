@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from 'react';
 import phaseProgressData from '../phase-progress.json';
+
+// Utility function to format date as YYYY-MM-DD string
+export function formatDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Get moon phase name for a given date
+export function getPhaseName(date) {
+  const dateString = formatDateString(date);
+  const dayData = phaseProgressData.dailyProgress.find(day => day.date === dateString);
+  return dayData ? dayData.phase : 'Unknown';
+}
 
 // Get moon phase progress percentage for a given date
 export function getMoonPhaseProgress(date = null) {
   const now = date || new Date();
-  // Use local date format to match our JSON data (avoiding timezone issues)
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const dateString = `${year}-${month}-${day}`; // YYYY-MM-DD format
+  const dateString = formatDateString(now);
   
   // Find the progress for the given date
   const dayData = phaseProgressData.dailyProgress.find(day => day.date === dateString);
@@ -17,37 +27,7 @@ export function getMoonPhaseProgress(date = null) {
     return dayData.progress;
   }
   
-  // Fallback: interpolate between available dates if exact date not found
-  const sortedDays = phaseProgressData.dailyProgress.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  // If before all dates, return first progress
-  if (now < new Date(sortedDays[0].date)) {
-    return sortedDays[0].progress;
-  }
-  
-  // If after all dates, return last progress
-  if (now > new Date(sortedDays[sortedDays.length - 1].date)) {
-    return sortedDays[sortedDays.length - 1].progress;
-  }
-  
-  // Find the two closest dates and interpolate
-  for (let i = 0; i < sortedDays.length - 1; i++) {
-    const currentDate = new Date(sortedDays[i].date);
-    const nextDate = new Date(sortedDays[i + 1].date);
-    
-    if (now >= currentDate && now <= nextDate) {
-      const timeDiff = nextDate - currentDate;
-      const elapsed = now - currentDate;
-      const progress = elapsed / timeDiff;
-      
-      const currentProgress = sortedDays[i].progress;
-      const nextProgress = sortedDays[i + 1].progress;
-      
-      return currentProgress + (nextProgress - currentProgress) * progress;
-    }
-  }
-  
-  // Fallback to 0 if nothing found
+  // Simple fallback: return 0 if date not found in our data range
   return 0;
 }
 
@@ -56,13 +36,13 @@ export function getCurrentMoonPhase(date = null) {
   
   // Map progress to phase names based on new mapping
   if (progress === 0) return 'Full Moon';
-  if (progress === 25) return 'Third Quarter';
+  if (progress === 25) return 'Last Quarter';
   if (progress === 50) return 'New Moon';
   if (progress === 75) return 'First Quarter';
   
   // For interpolated values, determine closest phase
   if (progress < 12.5) return 'Full Moon';
-  if (progress < 37.5) return 'Third Quarter';
+  if (progress < 37.5) return 'Last Quarter';
   if (progress < 62.5) return 'New Moon';
   if (progress < 87.5) return 'First Quarter';
   return 'Full Moon';
@@ -73,36 +53,18 @@ export function getMoonIllumination(date = null) {
   
   // Convert progress to illumination percentage
   // 0% progress = Full Moon = 100% illumination
-  // 25% progress = Third Quarter = 50% illumination  
+  // 25% progress = Last Quarter = 50% illumination  
   // 50% progress = New Moon = 0% illumination
   // 75% progress = First Quarter = 50% illumination
   // 100% progress = Full Moon = 100% illumination
   
-  if (progress <= 25) {
-    // From Full Moon (0%) to Third Quarter (25%)
-    return Math.round(100 - (progress / 25) * 50);
-  } else if (progress <= 50) {
-    // From Third Quarter (25%) to New Moon (50%)
-    return Math.round(50 - ((progress - 25) / 25) * 50);
-  } else if (progress <= 75) {
-    // From New Moon (50%) to First Quarter (75%)
-    return Math.round(((progress - 50) / 25) * 50);
-  } else {
-    // From First Quarter (75%) to Full Moon (100%)
-    return Math.round(50 + ((progress - 75) / 25) * 50);
-  }
+  // Use sine wave for smooth illumination curve
+  const radians = (progress / 100) * 2 * Math.PI;
+  const illumination = Math.round(50 + 50 * Math.cos(radians));
+  
+  return Math.max(0, Math.min(100, illumination));
 }
 
-export function getMoonPhaseIcon(phase) {
-  const icons = {
-    'New Moon': '🌑',
-    'First Quarter': '🌓',
-    'Full Moon': '🌕',
-    'Third Quarter': '🌗'
-  };
-  
-  return icons[phase] || '🌑';
-}
 
 export function getMoonPhaseSVG(phase, illumination = null, date = null) {
   // Get the progress percentage for accurate shadow positioning
