@@ -4,7 +4,20 @@ import DatePicker from './DatePicker.jsx';
 import './App.css';
 
 function App() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Initialize with a valid date within our data range (Jan 1, 2026 - Jan 31, 2027)
+  const getValidInitialDate = () => {
+    const today = new Date();
+    const dataStartDate = new Date('2026-01-01');
+    const dataEndDate = new Date('2027-01-31');
+    
+    // If today is within range, use it; otherwise use the start date
+    if (today >= dataStartDate && today <= dataEndDate) {
+      return today;
+    }
+    return dataStartDate;
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getValidInitialDate());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const datePickerRef = useRef(null);
