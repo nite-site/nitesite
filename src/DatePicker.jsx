@@ -4,9 +4,9 @@ import { getPhaseName } from './moonPhase.jsx';
 import './DatePicker.css';
 
 const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosing = false }, ref) => {
-  // Ensure initial date is within our data range (Oct 10, 2025 - Oct 10, 2026)
-  const dataStartDate = new Date('2025-10-10');
-  const dataEndDate = new Date('2026-10-10');
+  // Ensure initial date is within our data range (Jan 1, 2026 - Jan 31, 2027)
+  const dataStartDate = new Date('2026-01-01');
+  const dataEndDate = new Date('2027-01-31');
   
   const getValidInitialDate = (date) => {
     return date < dataStartDate ? dataStartDate : date > dataEndDate ? dataEndDate : date;
@@ -21,9 +21,9 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
   useEffect(() => {
     const generateDates = () => {
       const dateList = [];
-      // Our data covers October 10, 2025 to October 10, 2026
-      const startDate = new Date('2025-10-10');
-      const endDate = new Date('2026-10-10');
+      // Our data covers January 1, 2026 to January 31, 2027
+      const startDate = new Date('2026-01-01');
+      const endDate = new Date('2027-01-31');
       
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
