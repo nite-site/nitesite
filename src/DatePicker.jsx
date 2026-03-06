@@ -72,14 +72,21 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
     return Math.max(0, Math.min(index, dates.length - 1));
   };
 
-  const isScrollingRef = useRef(false);
-  const scrollSettleTimeoutRef = useRef(null);
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container || dates.length === 0) return;
 
     let rafId = null;
+    let debounceTimeout = null;
+    const supportsScrollEnd = 'onscrollend' in window;
+
+    const handleScrollSettle = () => {
+      const index = getCenteredIndex(container);
+      if (index >= 0 && index < dates.length) {
+        setSelectedDate(dates[index]);
+        onDateChange(dates[index]);
+      }
+    };
 
     const handleScroll = () => {
       if (!isReadyRef.current) return;
@@ -92,61 +99,23 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
           setSelectedDate(dates[index]);
           onDateChange(dates[index]);
         }
+        if (!supportsScrollEnd) {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(handleScrollSettle, 250);
+        }
       });
     };
 
-    const handleScrollSettle = () => {
-      if (!isReadyRef.current || !isScrollingRef.current) return;
-      isScrollingRef.current = false;
-      const index = getCenteredIndex(container);
-      if (index >= 0 && index < dates.length) {
-        setSelectedDate(dates[index]);
-        onDateChange(dates[index]);
-      }
-      // "Selection" haptic when scroll settles on final date
-      hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
-    };
-
-    const handleTouchStart = () => {
-      if (!isReadyRef.current) return;
-      isScrollingRef.current = true;
-      clearTimeout(scrollSettleTimeoutRef.current);
-      // "Nudge" haptic when finger touches to begin scrolling
-      hapticTrigger?.([
-        { duration: 80, intensity: 0.8 },
-        { delay: 80, duration: 50, intensity: 0.3 },
-      ]);
-    };
-
-    const handleTouchEnd = () => {
-      if (!isReadyRef.current || !isScrollingRef.current) return;
-      // "Soft" haptic when finger lifts
-      hapticTrigger?.([{ duration: 40, intensity: 0.5 }]);
-      // Debounce settle detection -- wait for snap animation to finish
-      clearTimeout(scrollSettleTimeoutRef.current);
-      scrollSettleTimeoutRef.current = setTimeout(handleScrollSettle, 300);
-    };
-
-    const supportsScrollEnd = 'onscrollend' in window;
-    const handleScrollEnd = () => {
-      clearTimeout(scrollSettleTimeoutRef.current);
-      handleScrollSettle();
-    };
-
     container.addEventListener('scroll', handleScroll, { passive: true });
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
     if (supportsScrollEnd) {
-      container.addEventListener('scrollend', handleScrollEnd);
+      container.addEventListener('scrollend', handleScrollSettle);
     }
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('scrollend', handleScrollEnd);
+      container.removeEventListener('scrollend', handleScrollSettle);
       if (rafId) cancelAnimationFrame(rafId);
-      clearTimeout(scrollSettleTimeoutRef.current);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
     };
   }, [dates, onDateChange, hapticTrigger]);
 
