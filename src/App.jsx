@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useWebHaptics } from 'web-haptics/react';
 import { getCurrentMoonPhase, getMoonPhaseSVG, getMoonIllumination } from './moonPhase.jsx';
 import DatePicker from './DatePicker.jsx';
 import './App.css';
 
 function App() {
+  const { trigger } = useWebHaptics({ debug: import.meta.env.DEV });
   // Initialize with a valid date within our data range (Jan 1, 2026 - Jan 31, 2027)
   const getValidInitialDate = () => {
     const today = new Date();
@@ -32,6 +34,10 @@ function App() {
 
   const toggleDatePicker = () => {
     if (showDatePicker) {
+      trigger([
+        { duration: 40, intensity: 0.8 },
+        { delay: 100, duration: 40, intensity: 0.6 },
+      ]);
       // Start closing animation
       setIsClosing(true);
       setTimeout(() => {
@@ -39,6 +45,10 @@ function App() {
         setIsClosing(false);
       }, 300); // Match CSS animation duration
     } else {
+      trigger([
+        { duration: 30 },
+        { delay: 60, duration: 40, intensity: 1 },
+      ]);
       setShowDatePicker(true);
     }
   };
@@ -46,7 +56,16 @@ function App() {
   // Close date picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showDatePicker && datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+      if (
+        showDatePicker &&
+        datePickerRef.current &&
+        !datePickerRef.current.contains(event.target) &&
+        !event.target.closest('.moon-icon')
+      ) {
+        trigger([
+          { duration: 40, intensity: 0.8 },
+          { delay: 100, duration: 40, intensity: 0.6 },
+        ]);
         // Start closing animation
         setIsClosing(true);
         setTimeout(() => {
@@ -65,11 +84,11 @@ function App() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [showDatePicker]);
+  }, [showDatePicker, trigger]);
 
   return (
     <div className="app">
-      {showDatePicker && <DatePicker ref={datePickerRef} onDateChange={handleDateChange} initialDate={selectedDate} isClosing={isClosing} />}
+      {showDatePicker && <DatePicker ref={datePickerRef} onDateChange={handleDateChange} initialDate={selectedDate} isClosing={isClosing} hapticTrigger={trigger} />}
       <div className="content">
         <div className="moon-icon" onClick={toggleDatePicker}>
           {moonIcon}

@@ -82,14 +82,10 @@
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding: 0.5rem 0;
-  scroll-behavior: auto; /* Disable smooth scrolling initially */
+  padding: 0.5rem calc(50% - 30px);
+  scroll-snap-type: x mandatory;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-.date-picker-container.smooth-scroll {
-  scroll-behavior: smooth; /* Enable smooth scrolling after opening */
 }
 
 .date-picker-container::-webkit-scrollbar {
@@ -97,6 +93,7 @@
 }
 
 .date-item {
+  scroll-snap-align: center;
   flex-shrink: 0;
   background: #222222;
   border: 0px solid #9D988E;
@@ -162,6 +159,7 @@
   
   .date-picker-container {
     gap: 0.25rem;
+    padding: 0.5rem calc(50% - 25px);
   }
   
   .date-item {

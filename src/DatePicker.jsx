@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import phaseProgressData from '../phase-progress.json';
 import { getPhaseName } from './moonPhase.jsx';
 import './DatePicker.css';
 
-const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosing = false }, ref) => {
+const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosing = false, hapticTrigger }, ref) => {
   // Ensure initial date is within our data range (Jan 1, 2026 - Jan 31, 2027)
   const dataStartDate = new Date('2026-01-01');
   const dataEndDate = new Date('2027-01-31');
@@ -14,8 +13,9 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
   
   const [selectedDate, setSelectedDate] = useState(getValidInitialDate(initialDate));
   const [dates, setDates] = useState([]);
-  const [enableSmoothScroll, setEnableSmoothScroll] = useState(false);
   const containerRef = useRef(null);
+  const lastCenteredIndexRef = useRef(-1);
+  const isReadyRef = useRef(false);
 
   // Generate dates for the picker (within our phase-progress.json data range)
   useEffect(() => {
@@ -37,69 +37,104 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
     generateDates();
   }, []);
 
-  // Auto-scroll to selected date when component mounts (instant, no animation)
+  // Mount-only: scroll to initial date (instant), set lastCenteredIndexRef, gate haptics with isReadyRef
   useEffect(() => {
-    if (dates.length > 0 && containerRef.current) {
-      const selectedIndex = dates.findIndex(date => 
-        date.toDateString() === selectedDate.toDateString()
-      );
-      
-      if (selectedIndex !== -1) {
-        const container = containerRef.current;
-        const item = container.querySelector(`[data-index="${selectedIndex}"]`);
-        if (item) {
-          // Center the item in the container (instant scroll)
-          const containerWidth = container.offsetWidth;
-          const itemLeft = item.offsetLeft;
-          const itemWidth = item.offsetWidth;
-          const scrollLeft = itemLeft - (containerWidth / 2) + (itemWidth / 2);
-          
-          container.scrollTo({
-            left: scrollLeft,
-            behavior: 'auto' // Instant scroll, no animation
-          });
-          
-          // Enable smooth scrolling after a short delay
-          setTimeout(() => {
-            setEnableSmoothScroll(true);
-          }, 300); // 300ms delay to allow picker to fully open
-        }
-      }
-    }
-  }, [dates, selectedDate]);
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    onDateChange(date);
-    
-    // Scroll to center the selected date
-    const selectedIndex = dates.findIndex(d => 
-      d.toDateString() === date.toDateString()
+    if (dates.length === 0 || !containerRef.current) return;
+    const selectedIndex = dates.findIndex(date =>
+      date.toDateString() === getValidInitialDate(initialDate).toDateString()
     );
-    
-    if (selectedIndex !== -1 && containerRef.current) {
-      const container = containerRef.current;
-      const item = container.querySelector(`[data-index="${selectedIndex}"]`);
-      if (item) {
-        // Use scrollIntoView for better smooth scrolling support
-        item.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center'
-        });
-      }
+    if (selectedIndex === -1) return;
+
+    const container = containerRef.current;
+    const item = container.querySelector(`[data-index="${selectedIndex}"]`);
+    if (item) {
+      const containerWidth = container.offsetWidth;
+      const itemLeft = item.offsetLeft;
+      const itemWidth = item.offsetWidth;
+      const scrollLeft = itemLeft - (containerWidth / 2) + (itemWidth / 2);
+
+      container.scrollTo({ left: scrollLeft, behavior: 'auto' });
+      lastCenteredIndexRef.current = selectedIndex;
+
+      setTimeout(() => {
+        isReadyRef.current = true;
+      }, 300);
     }
+  }, [dates]); // initialDate used only for mount scroll target; omit to prevent re-scroll when parent updates
+
+  const getCenteredIndex = (container) => {
+    const centerX = container.scrollLeft + container.offsetWidth / 2;
+    const paddingLeft = parseFloat(getComputedStyle(container).paddingLeft);
+    const isMobile = window.innerWidth <= 768;
+    const itemWidth = isMobile ? 50 : 60;
+    const gap = isMobile ? 4 : 8;
+    const index = Math.round((centerX - paddingLeft) / (itemWidth + gap));
+    return Math.max(0, Math.min(index, dates.length - 1));
   };
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || dates.length === 0) return;
+
+    let rafId = null;
+    let debounceTimeout = null;
+    const supportsScrollEnd = 'onscrollend' in window;
+
+    const handleScrollEnd = () => {
+      const index = getCenteredIndex(container);
+      if (index >= 0 && index < dates.length) {
+        setSelectedDate(dates[index]);
+        onDateChange(dates[index]);
+      }
+    };
+
+    const handleScroll = () => {
+      if (!isReadyRef.current) return;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const index = getCenteredIndex(container);
+        if (index !== lastCenteredIndexRef.current) {
+          lastCenteredIndexRef.current = index;
+          hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
+          onDateChange(dates[index]);
+        }
+        if (!supportsScrollEnd) {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(handleScrollEnd, 250);
+        }
+      });
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    if (supportsScrollEnd) {
+      container.addEventListener('scrollend', handleScrollEnd);
+    }
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('scrollend', handleScrollEnd);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
+  }, [dates, onDateChange, hapticTrigger]);
+
+  const handleDateChange = (date) => {
+    hapticTrigger?.([{ duration: 25 }], { intensity: 0.7 });
+    setSelectedDate(date);
+    onDateChange(date);
+
+    const selectedIndex = dates.findIndex(d =>
+      d.toDateString() === date.toDateString()
+    );
+    if (selectedIndex !== -1 && containerRef.current) {
+      const item = containerRef.current.querySelector(`[data-index="${selectedIndex}"]`);
+      item?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   };
 
   const scrollToToday = () => {
+    hapticTrigger?.([{ duration: 25 }], { intensity: 0.7 });
     const today = new Date();
     // If today is outside our data range, use the closest valid date
     const validToday = getValidInitialDate(today);
@@ -136,7 +171,7 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
           Today
         </button>
       </div>
-      <div className={`date-picker-container ${enableSmoothScroll ? 'smooth-scroll' : ''}`} ref={containerRef}>
+      <div className="date-picker-container" ref={containerRef}>
         {dates.map((date, index) => (
           <div
             key={index}
