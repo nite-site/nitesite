@@ -36,9 +36,9 @@ function App() {
     if (showDatePicker) {
       event?.preventDefault?.(); // Prevent delayed click on touch devices from re-opening
       trigger([
-        { duration: 40, intensity: 0.8 },
-        { delay: 100, duration: 40, intensity: 0.6 },
-      ]);
+        { duration: 40 },
+        { delay: 100, duration: 30 },
+      ], { intensity: 1 });
       // Start closing animation
       setIsClosing(true);
       setTimeout(() => {
@@ -48,8 +48,8 @@ function App() {
     } else {
       trigger([
         { duration: 30 },
-        { delay: 60, duration: 40, intensity: 1 },
-      ]);
+        { delay: 60, duration: 40 },
+      ], { intensity: 1 });
       setShowDatePicker(true);
     }
   };
@@ -64,9 +64,9 @@ function App() {
         !event.target.closest('.moon-icon')
       ) {
         trigger([
-          { duration: 40, intensity: 0.8 },
-          { delay: 100, duration: 40, intensity: 0.6 },
-        ]);
+          { duration: 40 },
+          { delay: 100, duration: 30 },
+        ], { intensity: 1 });
         // Start closing animation
         setIsClosing(true);
         setTimeout(() => {
