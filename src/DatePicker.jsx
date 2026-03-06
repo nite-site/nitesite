@@ -72,67 +72,81 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
     return Math.max(0, Math.min(index, dates.length - 1));
   };
 
+  const isScrollingRef = useRef(false);
+  const scrollSettleTimeoutRef = useRef(null);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container || dates.length === 0) return;
 
     let rafId = null;
-    let debounceTimeout = null;
-    const supportsScrollEnd = 'onscrollend' in window;
-
-    const updateCenteredDate = (fireHaptic) => {
-      const index = getCenteredIndex(container);
-      if (index !== lastCenteredIndexRef.current) {
-        lastCenteredIndexRef.current = index;
-        setSelectedDate(dates[index]);
-        onDateChange(dates[index]);
-        if (fireHaptic) {
-          hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
-        }
-      }
-    };
-
-    const handleScrollEnd = () => {
-      const index = getCenteredIndex(container);
-      if (index >= 0 && index < dates.length) {
-        setSelectedDate(dates[index]);
-        onDateChange(dates[index]);
-      }
-    };
 
     const handleScroll = () => {
       if (!isReadyRef.current) return;
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        updateCenteredDate(false);
-        if (!supportsScrollEnd) {
-          clearTimeout(debounceTimeout);
-          debounceTimeout = setTimeout(handleScrollEnd, 250);
+        const index = getCenteredIndex(container);
+        if (index !== lastCenteredIndexRef.current) {
+          lastCenteredIndexRef.current = index;
+          setSelectedDate(dates[index]);
+          onDateChange(dates[index]);
         }
       });
     };
 
-    // touchmove carries user gesture privileges on iOS, so haptics
-    // triggered from here will fire the native checkbox-switch feedback.
-    // scroll events do not carry this privilege.
-    const handleTouchMove = () => {
+    const handleScrollSettle = () => {
+      if (!isReadyRef.current || !isScrollingRef.current) return;
+      isScrollingRef.current = false;
+      const index = getCenteredIndex(container);
+      if (index >= 0 && index < dates.length) {
+        setSelectedDate(dates[index]);
+        onDateChange(dates[index]);
+      }
+      // "Selection" haptic when scroll settles on final date
+      hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
+    };
+
+    const handleTouchStart = () => {
       if (!isReadyRef.current) return;
-      updateCenteredDate(true);
+      isScrollingRef.current = true;
+      clearTimeout(scrollSettleTimeoutRef.current);
+      // "Nudge" haptic when finger touches to begin scrolling
+      hapticTrigger?.([
+        { duration: 80, intensity: 0.8 },
+        { delay: 80, duration: 50, intensity: 0.3 },
+      ]);
+    };
+
+    const handleTouchEnd = () => {
+      if (!isReadyRef.current || !isScrollingRef.current) return;
+      // "Soft" haptic when finger lifts
+      hapticTrigger?.([{ duration: 40, intensity: 0.5 }]);
+      // Debounce settle detection -- wait for snap animation to finish
+      clearTimeout(scrollSettleTimeoutRef.current);
+      scrollSettleTimeoutRef.current = setTimeout(handleScrollSettle, 300);
+    };
+
+    const supportsScrollEnd = 'onscrollend' in window;
+    const handleScrollEnd = () => {
+      clearTimeout(scrollSettleTimeoutRef.current);
+      handleScrollSettle();
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
     if (supportsScrollEnd) {
       container.addEventListener('scrollend', handleScrollEnd);
     }
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
-      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('scrollend', handleScrollEnd);
       if (rafId) cancelAnimationFrame(rafId);
-      if (debounceTimeout) clearTimeout(debounceTimeout);
+      clearTimeout(scrollSettleTimeoutRef.current);
     };
   }, [dates, onDateChange, hapticTrigger]);
 
