@@ -80,6 +80,18 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
     let debounceTimeout = null;
     const supportsScrollEnd = 'onscrollend' in window;
 
+    const updateCenteredDate = (fireHaptic) => {
+      const index = getCenteredIndex(container);
+      if (index !== lastCenteredIndexRef.current) {
+        lastCenteredIndexRef.current = index;
+        setSelectedDate(dates[index]);
+        onDateChange(dates[index]);
+        if (fireHaptic) {
+          hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
+        }
+      }
+    };
+
     const handleScrollEnd = () => {
       const index = getCenteredIndex(container);
       if (index >= 0 && index < dates.length) {
@@ -93,13 +105,7 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        const index = getCenteredIndex(container);
-        if (index !== lastCenteredIndexRef.current) {
-          lastCenteredIndexRef.current = index;
-          setSelectedDate(dates[index]);
-          onDateChange(dates[index]);
-          hapticTrigger?.([{ duration: 12 }], { intensity: 1 });
-        }
+        updateCenteredDate(false);
         if (!supportsScrollEnd) {
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(handleScrollEnd, 250);
@@ -107,13 +113,23 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
       });
     };
 
+    // touchmove carries user gesture privileges on iOS, so haptics
+    // triggered from here will fire the native checkbox-switch feedback.
+    // scroll events do not carry this privilege.
+    const handleTouchMove = () => {
+      if (!isReadyRef.current) return;
+      updateCenteredDate(true);
+    };
+
     container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
     if (supportsScrollEnd) {
       container.addEventListener('scrollend', handleScrollEnd);
     }
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('scrollend', handleScrollEnd);
       if (rafId) cancelAnimationFrame(rafId);
       if (debounceTimeout) clearTimeout(debounceTimeout);

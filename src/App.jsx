@@ -32,24 +32,22 @@ function App() {
     setSelectedDate(date);
   };
 
-  const toggleDatePicker = (event) => {
+  const toggleDatePicker = () => {
     if (showDatePicker) {
-      event?.preventDefault?.(); // Prevent delayed click on touch devices from re-opening
       trigger([
-        { duration: 40 },
-        { delay: 100, duration: 30 },
-      ], { intensity: 1 });
-      // Start closing animation
+        { duration: 40, intensity: 0.8 },
+        { delay: 100, duration: 40, intensity: 0.6 },
+      ]);
       setIsClosing(true);
       setTimeout(() => {
         setShowDatePicker(false);
         setIsClosing(false);
-      }, 300); // Match CSS animation duration
+      }, 300);
     } else {
       trigger([
         { duration: 30 },
-        { delay: 60, duration: 40 },
-      ], { intensity: 1 });
+        { delay: 60, duration: 40, intensity: 1 },
+      ]);
       setShowDatePicker(true);
     }
   };
@@ -64,9 +62,9 @@ function App() {
         !event.target.closest('.moon-icon')
       ) {
         trigger([
-          { duration: 40 },
-          { delay: 100, duration: 30 },
-        ], { intensity: 1 });
+          { duration: 40, intensity: 0.8 },
+          { delay: 100, duration: 40, intensity: 0.6 },
+        ]);
         // Start closing animation
         setIsClosing(true);
         setTimeout(() => {
@@ -77,11 +75,13 @@ function App() {
     };
 
     if (showDatePicker) {
-      document.addEventListener('pointerdown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('pointerdown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDatePicker, trigger]);
 
@@ -89,7 +89,7 @@ function App() {
     <div className="app">
       {showDatePicker && <DatePicker ref={datePickerRef} onDateChange={handleDateChange} initialDate={selectedDate} isClosing={isClosing} hapticTrigger={trigger} />}
       <div className="content">
-        <div className="moon-icon" onPointerDown={(e) => toggleDatePicker(e)}>
+        <div className="moon-icon" onClick={toggleDatePicker}>
           {moonIcon}
         </div>
         <div className="text-content">
