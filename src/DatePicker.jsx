@@ -96,8 +96,9 @@ const DatePicker = forwardRef(({ onDateChange, initialDate = new Date(), isClosi
         const index = getCenteredIndex(container);
         if (index !== lastCenteredIndexRef.current) {
           lastCenteredIndexRef.current = index;
-          hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
+          setSelectedDate(dates[index]);
           onDateChange(dates[index]);
+          hapticTrigger?.([{ duration: 8 }], { intensity: 0.3 });
         }
         if (!supportsScrollEnd) {
           clearTimeout(debounceTimeout);

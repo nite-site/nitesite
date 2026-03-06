@@ -32,8 +32,9 @@ function App() {
     setSelectedDate(date);
   };
 
-  const toggleDatePicker = () => {
+  const toggleDatePicker = (event) => {
     if (showDatePicker) {
+      event?.preventDefault?.(); // Prevent delayed click on touch devices from re-opening
       trigger([
         { duration: 40, intensity: 0.8 },
         { delay: 100, duration: 40, intensity: 0.6 },
@@ -76,13 +77,11 @@ function App() {
     };
 
     if (showDatePicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('pointerdown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
   }, [showDatePicker, trigger]);
 
@@ -90,7 +89,7 @@ function App() {
     <div className="app">
       {showDatePicker && <DatePicker ref={datePickerRef} onDateChange={handleDateChange} initialDate={selectedDate} isClosing={isClosing} hapticTrigger={trigger} />}
       <div className="content">
-        <div className="moon-icon" onClick={toggleDatePicker}>
+        <div className="moon-icon" onPointerDown={(e) => toggleDatePicker(e)}>
           {moonIcon}
         </div>
         <div className="text-content">
